@@ -1,22 +1,6 @@
 use quick_xml::de::from_str;
 use serde::Deserialize;
 
-pub fn collect_interface_names(domain: Domain) -> Vec<String> {
-    let devices = match domain.devices {
-        Some(device) => device,
-        None => Devices {
-            interfaces: Some(vec![]),
-        },
-    };
-
-    let interfaces = match devices.interfaces {
-        Some(interfaces) => interfaces,
-        None => vec![],
-    };
-
-    interfaces.into_iter().map(|i| i.target.dev).collect()
-}
-
 pub fn parse_domain_xml(domain_xml: &str) -> Result<Domain, &str> {
     match from_str(domain_xml) {
         Ok(x) => Ok(x),
@@ -55,6 +39,29 @@ pub struct InterfaceTarget {
     pub dev: String,
 }
 
+impl Domain {
+    pub fn interface_names(&self) -> Vec<&str> {
+        let devices = match &self.devices {
+            Some(device) => device,
+            None => {
+                return vec![];
+            }
+        };
+
+        let interfaces = match &devices.interfaces {
+            Some(interfaces) => interfaces,
+            None => {
+                return vec![];
+            }
+        };
+
+        interfaces
+            .into_iter()
+            .map(|i| i.target.dev.as_str())
+            .collect()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::libvirt::xml::*;
@@ -77,10 +84,10 @@ mod tests {
     "#;
 
     #[test]
-    fn test_collect_interface_names() {
+    fn test_interface_names() {
         let domain = parse_domain_xml(DOMAIN).unwrap();
 
-        let ifnames = collect_interface_names(domain);
+        let ifnames = domain.interface_names();
 
         assert_eq!(ifnames.len(), 2);
 

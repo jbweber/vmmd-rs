@@ -8,5 +8,8 @@ fn main() {
 
     let domain = parse_domain_xml(&devel05).unwrap();
 
+    let ifnames = domain.interface_names();
+
     println!("{:?}", domain);
+    println!("{:?}", ifnames);
 }

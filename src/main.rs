@@ -1,15 +1,29 @@
+use std::io::Read;
+use vmmd::libvirt::hooks::qemu;
 use vmmd::libvirt::xml::parse_domain_xml;
 
-fn main() {
-    let devel05 = match std::fs::read_to_string("devel-05.xml") {
-        Ok(x) => x,
-        Err(_) => return,
-    };
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = std::env::args().collect::<Vec<String>>();
 
-    let domain = parse_domain_xml(&devel05).unwrap();
+    println!("{:?}", args);
 
-    let ifnames = domain.interface_names();
+    if args.len() != 5 {
+        return Err(format!("expected 5 arguments got {}", args.len()).into());
+    }
 
-    println!("{:?}", domain);
-    println!("{:?}", ifnames);
+    let oper = &args[2];
+    let sub_oper = &args[3];
+
+    if oper != "started" || sub_oper != "begin" {
+        return Ok(());
+    }
+
+    let mut domain_xml = String::new();
+    std::io::stdin().read_to_string(&mut &mut domain_xml)?;
+
+    let domain = parse_domain_xml(&domain_xml)?;
+
+    qemu(oper, sub_oper, &domain)?;
+
+    Ok(())
 }

@@ -118,6 +118,7 @@ async fn add_route_to_iface(
     }
 }
 
+#[allow(dead_code)]
 fn hexify_ipv4_address(ipv4_address: &std::net::Ipv4Addr) -> String {
     hex::encode(ipv4_address.octets())
 }

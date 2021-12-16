@@ -1,13 +1,10 @@
 use quick_xml::de::from_str;
 use serde::Deserialize;
 
-pub fn parse_domain_xml(domain_xml: &str) -> Result<Domain, &str> {
+pub fn parse_domain_xml(domain_xml: &str) -> Result<Domain, Box<dyn std::error::Error>> {
     match from_str(domain_xml) {
         Ok(x) => Ok(x),
-        Err(_) => {
-            // TODO maybe log here the deserialization error?
-            Err("failed to parse domain XML")
-        }
+        Err(err) => Err(format!("failed to parse domain XML: {}", err).into()),
     }
 }
 
@@ -64,7 +61,7 @@ impl Domain {
 
 #[cfg(test)]
 mod tests {
-    use crate::libvirt::xml::*;
+    use super::*;
     use quick_xml::de::from_str;
 
     static DOMAIN: &str = r#"
@@ -106,7 +103,10 @@ mod tests {
     fn test_parse_domain_xml_error() {
         let parse_error = parse_domain_xml("").expect_err("error expected");
 
-        assert_eq!(parse_error, "failed to parse domain XML")
+        assert_eq!(
+            parse_error.to_string(),
+            "failed to parse domain XML: Expecting Start event"
+        )
     }
 
     #[test]

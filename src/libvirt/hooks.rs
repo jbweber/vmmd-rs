@@ -1,19 +1,31 @@
+use super::xml::parse_domain_xml;
 use futures_util::TryStreamExt;
+use log::info;
+use std::io::Read;
 
-pub fn qemu(
-    oper: &str,
-    sub_oper: &str,
-    domain: &crate::libvirt::xml::Domain,
-) -> Result<(), Box<dyn std::error::Error>> {
-    // logger.debug('skipping non-matching op or sub_op', extra={'execution_id': execution_id})
-    if oper != "started" || sub_oper != "begin" {
-        // TODO log here
-        return Ok(());
+pub fn qemu() -> Result<(), Box<dyn std::error::Error>> {
+    let args = std::env::args().collect::<Vec<String>>();
+
+    if args.len() != 5 {
+        return Err(format!("expected 5 arguments got {}", args.len()).into());
     }
 
-    // logger.debug('executing matched op and sub_op', extra={'execution_id': execution_id})
+    let oper = &args[2];
+    let sub_oper = &args[3];
 
-    //let name = &domain.name;
+    let mut domain_xml = String::new();
+    std::io::stdin().read_to_string(&mut &mut domain_xml)?;
+
+    let domain = parse_domain_xml(&domain_xml)?;
+
+    info!(
+        "{} - executing matched oper `{}` and sub_oper `{}`",
+        &domain.name, oper, sub_oper
+    );
+
+    if oper != "started" || sub_oper != "begin" {
+        return Ok(());
+    }
 
     let interface_names: Vec<&str> = domain
         .interface_names()
@@ -21,7 +33,10 @@ pub fn qemu(
         .filter(|ifname| ifname.starts_with("vmmd-"))
         .collect();
 
-    // logger.info('configuring interfaces', extra={'execution_id': execution_id, 'machine_name': name, 'interfaces': interfaces})
+    info!(
+        "{} - configuring interfaces `{:?}`",
+        &domain.name, &interface_names,
+    );
 
     for &interface_name in interface_names.iter() {
         let split = interface_name.split("-").collect::<Vec<&str>>();
